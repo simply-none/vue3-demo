@@ -1,53 +1,103 @@
+<template>
+  <nav class="left">
+    <div class="left-item" :class="getMenuItem(route)" v-for="route in routes" @click="toggleRoute(route)">
+      {{ route.name }}
+    </div>
+  </nav>
+  <div class="right">
+    <router-view/>
+  </div>
+</template>
+
 <script>
-// This starter template is using Vue 3 <script setup> SFCs
-// Check out https://vuejs.org/api/sfc-script-setup.html#script-setup
-import testDemo1 from 'components/testDemo1.vue'
-import TestDemo2 from 'components/testDemo2.vue'
-import TestDemo3 from 'components/testDemo3/index.vue'
-
-import { ref } from 'vue'
-
+import { ref, reactive, toRefs, computed } from 'vue'
+import { useRouter } from 'vue-router'
 export default {
-  components: {
-    testDemo1,
-    TestDemo2,
-    TestDemo3
-  },
   setup () {
-    let msg = ref('test')
-    let color = ref('red')
+    const state = reactive({
+      routes: []
+    })
+    const { routes } = toRefs(state)
+    const routers = useRouter()
+    console.log(routers, '测试')
+    routers.options.routes.forEach(route => {
+      if (route.children) {
+        routes.value.push({
+          ...route,
+          notLink: true
+        })
+      } else {
+        routes.value.push(route)
+      }
+      if (route.children && typeof route.children === 'object') {
+        route.children.forEach(child => {
+          routes.value.push({
+            ...child,
+            isChild: true
+          })
+        })
+      }
+    })
+
+    // 跳转路由
+    const toggleRoute = (route) => {
+      if (route.notLink) {
+        return false
+      }
+      routers.push({
+        name: route.name,
+        params: {
+          random: Math.random()
+        }
+      })
+    }
+    const getMenuItem = (route) => {
+      const classs = []
+      if (route.isChild) {
+        classs.push('is-child')
+      }
+      if (route.notLink) {
+        classs.push('not-link')
+      }
+      return classs
+    }
     return {
-      msg,
-      color
+      routes,
+      toggleRoute,
+      getMenuItem
     }
   }
 }
 </script>
 
-<template>
-  <input type="color" v-model="color"/>
-  <input v-model="msg"/>
-  <testDemo1 :msg="msg" />
-  <TestDemo2 :msg="msg" />
-  <TestDemo3 :msg="msg" />
-  <h6></h6>
-</template>
-
-<style>
-input {
-  color: v-bind(color);
+<style lang="scss">
+#app {
+  display: flex;
+  flex-flow: row nowrap;
 }
-h6 {
-  background-color: v-bind(color);
-  font-family: Avenir, Helvetica, Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-align: center;
-  color: #2c3e50;
-  margin-top: 60px;
-  width: 100px;
-  height: 100px;
-  position: fixed;
-  right: 10px;
+</style>
+
+<style lang="scss" scoped>
+.left {
+  border-right: 3px solid red;
+  margin-right: 10px;
+  min-width: 200px;
+  display: flex;
+  flex-flow: column nowrap;
+  &-item {
+    /* flex: 1; */
+    cursor: pointer;
+    height: 2em;
+    line-height: 2em;
+    padding: 0 10px;
+    color: blue;
+    &.not-link {
+      color: #000;
+    }
+    &.is-child {
+      text-indent: 1em;
+      color: blue;
+    }
+  }
 }
 </style>
